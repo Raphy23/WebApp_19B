@@ -30,28 +30,24 @@ function emptyElement(elem) {
     }
 }
 
-const firstBoard = [
-    ['', 'A', '', ''],
-    ['', '', 'B', ''],
-    ['', '', '', 'A'],
-    ['B', '', '', ''],
-];
+// const firstBoard = [
+//     ['', 'A', '', ''],
+//     ['', '', 'B', ''],
+//     ['', '', '', 'A'],
+//     ['B', '', '', ''],
+// ];
 
-const secondBoard = [
-    ['', 'A', '', ''],
-    ['', 'A', 'B', ''],
-    ['', '', '', 'A'],
-    ['B', '', '', ''],
-];
+// const secondBoard = [
+//     ['', 'A', '', ''],
+//     ['', 'A', 'B', ''],
+//     ['', '', '', 'A'],
+//     ['B', '', '', ''],
+// ];
 
 class Game {
     constructor(n) {
         this.n = n;
-        this.board = [
-            ['', '', ''],
-            ['', '', ''],
-            ['', '', ''],
-        ];
+        this.board = Array(n).fill(Array(n).fill(''));
         this.currentPlayer = 'A';
         this.render();
     }
@@ -80,6 +76,16 @@ class Game {
         this.makeMove(row, col, 'A');
     }
 
+    // Enable the valid cells per the current board and per current user.
+    validateCells(){
+
+    }
+
+    isValidPosition(y, x) {
+        
+        return (y >= 0 && y <= this.n) && (x >= 0 && x < this.n);
+    }
+
     render() {
         const parent = document.getElementById('game-board');
         parent.style.gridTemplateRows = `repeat(${this.n}, 1fr)`;
@@ -105,4 +111,4 @@ class Game {
     }
 }
 
-const game = new Game(3);
+const game = new Game(10);

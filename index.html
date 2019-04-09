@@ -4,7 +4,26 @@
         <link rel="stylesheet" href="./src/index.css" />
     </head>
     <body>
-        <h1>Reversiiiii</h1>
+        <header>
+            <h1>Reversi</h1>
+        </header>
+        <div id="game-info">
+            <div id="black-info" class="player-info">
+                <div id="black-player-label" class="player-label">Black</div>
+                <div id="black-turns-label" class="stat-label">Turns:<span id="black-turns-count">0</span></div>
+                <div id="black-avg-label" class="stat-label">Average turn time:<span id="black-turns-avg">0</span></div>
+                <div id="black-score-label" class="stat-label">Score:<span id="black-score">0</span></div>
+                <div id="black-2-disk-label" class="stat-label">2 disks left count:<span id="black-2-disks-left">0</span></div>
+                </div>
+            <div id="white-info" class="player-info">
+                    <div id="white-player-label" class="player-label">White</div>
+                    <div id="white-turns-label" class="stat-label">Turns:<span id="white-turns-count">0</span></div>
+                    <div id="white-avg-label" class="stat-label">Average turn time:<span id="white-turns-avg">0</span></div>
+                    <div id="white-score-label" class="stat-label">Score:<span id="white-score">0</span></div>
+                    <div id="white-2-disk-label" class="stat-label">2 disks left count:<span id="white-2-disks-left">0</span></div>
+            </div>
+            <div id="elapsed-time-label">Time:<span id="elapsed-time">0</span></div>
+        </div>
         <div id="game-board">
         </div>
 
