@@ -49,31 +49,125 @@ class Game {
         this.n = n;
         this.board = Array(n).fill(Array(n).fill(''));
         this.currentPlayer = 'A';
+        this.enabledCells = {};
+        this.initGameBoard();
+        this.populateEnabledCells();
+        this.startTimer();
         this.render();
+    }
+
+    // playerBlack = {
+    //     type = 'A',
+    //     turns: 0,
+    //     score: 0,
+    //     avgerageDuration = 0
+    // }
+
+    destroy() {
+        clearInterval(this.timerId);
+        emptyElement(document.getElementById('game-board'));
+        emptyElement(document.getElementById('elapsed-time'));
+    }
+
+    formatClock(seconds) {
+        return `${Math.floor(seconds / 60)}:${seconds%60}`;
+    }
+
+    startTimer() {
+        this.duration = 0;
+        this.timerId = setInterval(() => {
+            this.duration++;
+            document.getElementById('elapsed-time').textContent = this.formatClock(this.duration);
+        }, 1000);
+    }
+
+    initGameBoard(){
+        this.placePiece(this.n/2 - 1, this.n/2 - 1, 'A');
+        this.placePiece(this.n/2, this.n/2, 'A');
+        this.placePiece(this.n/2, this.n/2 - 1, 'B');
+        this.placePiece(this.n/2 - 1, this.n/2, 'B');
+    }
+
+    hasValidPath(x, y, step) {
+        if (!this.isValidPosition(x + step.x, y + step.y)) {
+            return false;
+        }
+        const dest = this.board[y + step.y][x + step.x];
+        if (dest) {
+            if (dest === this.currentPlayer) {
+                if ((this.board[y][x] || this.currentPlayer) !== dest) {
+                    return true;
+                }
+            } else {
+                return this.hasValidPath(x + step.x, y + step.y, step);
+            }
+        }
+        return false;
+    }
+
+    getDirections() {
+        const dirs = [];
+        for (let x = -1; x <= 1; x++) {
+            for (let y = -1; y <= 1; y++) {
+                if (y || x) {
+                    dirs.push({x, y});
+                }
+            }
+        }
+        return dirs;
+    }
+
+    populateEnabledCells() {
+        this.enabledCells = {};
+
+        for (let x = 0; x < this.n; x++) {
+            for (let y = 0; y < this.n; y++) {
+                if (this.getDirections().some(dir => this.hasValidPath(x, y, dir))) {
+                    this.enabledCells[`${x}*${y}`] = true;
+                }
+            }
+        }
     }
 
     nextTurn() {
         this.currentPlayer = this.currentPlayer === 'A' ? 'B' : 'A';
     }
 
-    makeMove(y, x) {
+    placePiece(x, y, type){
         this.board = this.board.map((row, i) => row.map((cell, j) => {
             if (i === y && j === x) {
-                return this.currentPlayer;
+                return type;
             }
             return cell;
         }));
-
-        this.nextTurn();
-
-        this.render();
     }
 
-    handleCellClick(i) {
-        const row = i === 0 ? 0 : Math.floor(i / this.n);
-        const col = i === 0 ? 0 : i % this.n;
+    eatDirection(x, y, step) {
+        if (!this.isValidPosition(x + step.x, y + step.y)) {
+            return;
+        }
+        const dest = this.board[y + step.y][x + step.x];
         
-        this.makeMove(row, col, 'A');
+        if (dest === this.currentPlayer) {
+            return;
+        }
+
+        this.placePiece(x + step.x, y + step.y, this.currentPlayer);
+        this.eatDirection(x + step.x, y + step.y, step);
+    }
+
+    makeMove(x, y) {
+        this.placePiece(x, y, this.currentPlayer);
+
+        this.getDirections().forEach(dir => {
+            if (this.hasValidPath(x, y, dir)) {
+                this.eatDirection(x, y, dir);
+            }
+        });
+
+        this.nextTurn();
+        this.populateEnabledCells();
+        this.render();
     }
 
     // Enable the valid cells per the current board and per current user.
@@ -81,9 +175,8 @@ class Game {
 
     }
 
-    isValidPosition(y, x) {
-        
-        return (y >= 0 && y <= this.n) && (x >= 0 && x < this.n);
+    isValidPosition(x, y) {
+        return (y >= 0 && y < this.n) && (x >= 0 && x < this.n);
     }
 
     render() {
@@ -91,24 +184,29 @@ class Game {
         parent.style.gridTemplateRows = `repeat(${this.n}, 1fr)`;
         parent.style.gridTemplateColumns = `repeat(${this.n}, 1fr)`;
         emptyElement(parent);
+        parent.classList.remove('black', 'white');
+        parent.classList.add(this.currentPlayer === 'A' ? 'black' : 'white');
 
-        this.board.flat()
-            .map((cell, i) => {
-                const cellElem = makeDiv('cell', !cell ? 'enabled' : undefined);
+        this.board.map(
+            (row, y) => 
+                row.map((cell, x) => {
+                    const disabled = !this.enabledCells[`${x}*${y}`];
 
-                if (!cell) {
-                    cellElem.addEventListener('click', () => this.handleCellClick(i));
-                }
+                    const cellElem = makeDiv('cell', disabled ? 'disabled' : undefined);
 
-                if (cell) {
-                    const piece = makeDiv('piece', cell === 'A' ? 'black' : 'white');
-                    cellElem.appendChild(piece);
-                }
+                    if (!disabled) {
+                        cellElem.addEventListener('click', () => this.makeMove(x, y));
+                    }
 
-                return cellElem;
-            })
-            .forEach(cell => parent.appendChild(cell));
+                    if (cell) {
+                        const piece = makeDiv('piece', cell === 'A' ? 'black' : 'white');
+                        cellElem.appendChild(piece);
+                    }
+
+                    return cellElem;
+                })
+        ).flat().forEach(cell => parent.appendChild(cell));
     }
 }
 
-const game = new Game(10);
+let game = new Game(10);

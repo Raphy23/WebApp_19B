@@ -1,13 +1,12 @@
 header {
     background: white;
-    padding: 10px;
+    padding: 2px;
 }
 
 header > h1 {
     color: rgb(1, 15, 3);
     text-align: center;
     font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
-
 }
 
 body {
@@ -16,7 +15,7 @@ body {
 
 .player-info{
     display: inline-block;
-    margin: 20px auto;
+    margin: 10px auto;
     border-radius: 4px;
     text-align: center;
     color: rgb(17, 11, 4);
@@ -73,12 +72,25 @@ body {
     display: flex;
 }
 
-#game-board > .cell.enabled:hover {
+#game-board > .cell:empty {
+    cursor: pointer;
+}
+
+#game-board.black > .cell:hover:empty {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+#game-board.white > .cell:hover:empty {
     background-color: rgba(255, 255, 255, 0.75);
 }
 
-#game-board > .cell.disabled:hover {
-    background-color: rgba( 172, 42, 42, 0.75);
+#game-board > .cell.disabled:empty {
+    /*background-color: rgba(165, 0, 0, 0.897);**/
+    cursor: not-allowed;
+}
+
+#game-board > .cell.disabled:hover:empty {
+    background-color: inherit;
 }
 
 #game-board > .cell > .piece {
