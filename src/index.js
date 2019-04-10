@@ -30,25 +30,48 @@ function emptyElement(elem) {
     }
 }
 
-// const firstBoard = [
-//     ['', 'A', '', ''],
-//     ['', '', 'B', ''],
-//     ['', '', '', 'A'],
-//     ['B', '', '', ''],
-// ];
+function formatClock(seconds) {
+    if (seconds%60 < 10){
+        return `${Math.floor(seconds / 60)}:0${seconds%60}`;
+    }
+    else{
+        return `${Math.floor(seconds / 60)}:${seconds%60}`;
+    }
+}
 
-// const secondBoard = [
-//     ['', 'A', '', ''],
-//     ['', 'A', 'B', ''],
-//     ['', '', '', 'A'],
-//     ['B', '', '', ''],
-// ];
+function getDirections() {
+    const dirs = [];
+    for (let x = -1; x <= 1; x++) {
+        for (let y = -1; y <= 1; y++) {
+            if (y || x) {
+                dirs.push({x, y});
+            }
+        }
+    }
+    return dirs;
+}
+
+
+function Player(type, turns, score, numOf2DisksLeft){
+    this.score = score;
+    this.turns = turns;
+    this.averageDuration = 0;
+    this.type = type;
+    this.numOf2DisksLeft = numOf2DisksLeft;
+    this.turnStartTime = 0;
+}
+
+function getDocElementById(id) {
+    return document.getElementById(id);
+}
 
 class Game {
     constructor(n) {
         this.n = n;
         this.board = Array(n).fill(Array(n).fill(''));
-        this.currentPlayer = 'A';
+        this.playerBlack = new Player('A', 0, 2, 1);
+        this.playerWhite = new Player('B', 0, 2, 1);
+        this.currentPlayer = this.playerBlack; //'A';
         this.enabledCells = {};
         this.initGameBoard();
         this.populateEnabledCells();
@@ -56,28 +79,56 @@ class Game {
         this.render();
     }
 
-    // playerBlack = {
-    //     type = 'A',
-    //     turns: 0,
-    //     score: 0,
-    //     avgerageDuration = 0
-    // }
-
     destroy() {
         clearInterval(this.timerId);
-        emptyElement(document.getElementById('game-board'));
-        emptyElement(document.getElementById('elapsed-time'));
+        emptyElement(getDocElementById('game-board'));
+        emptyElement(getDocElementById('elapsed-time'));
     }
 
-    formatClock(seconds) {
-        return `${Math.floor(seconds / 60)}:${seconds%60}`;
+    updateScoreStats() {
+        getDocElementById('white-score').textContent = this.playerWhite.score;
+        getDocElementById('black-score').textContent = this.playerBlack.score;
+        if (this.playerWhite.score === 2){
+            this.playerWhite.numOf2DisksLeft += 1;
+            getDocElementById('white-2-disks-left').textContent = this.playerWhite.numOf2DisksLeft;
+        }
+        if (this.playerBlack.score === 2){
+            this.playerBlack.numOf2DisksLeft += 1;
+            getDocElementById('black-2-disks-left').textContent = this.playerBlack.numOf2DisksLeft;
+        }
+    }
+
+    updateTurns() {
+        if (this.currentPlayer === this.playerBlack) {
+            let id = 'black-turns-count';
+            getDocElementById(id).textContent = this.currentPlayer.turns;
+            id = 'black-turns-avg';
+            getDocElementById(id).textContent = this.currentPlayer.averageDuration.toFixed(2);
+        }
+        else{
+            let id = 'white-turns-count';
+            getDocElementById(id).textContent = this.currentPlayer.turns;
+            id = 'white-turns-avg';
+            getDocElementById(id).textContent = this.currentPlayer.averageDuration.toFixed(2);
+        }
+    }
+
+    updateStatsBoard() {
+        this.updateTurns();
+        this.updateScoreStats();
+    }
+
+    updatePlayerAverageTime() {
+        let elapsedTurnTime = this.duration - this.currentPlayer.turnStartTime;
+        this.currentPlayer.averageDuration = 
+            this.currentPlayer.averageDuration + ((elapsedTurnTime - this.currentPlayer.averageDuration) / this.currentPlayer.turns);
     }
 
     startTimer() {
         this.duration = 0;
         this.timerId = setInterval(() => {
             this.duration++;
-            document.getElementById('elapsed-time').textContent = this.formatClock(this.duration);
+            getDocElementById('elapsed-time').textContent = formatClock(this.duration);
         }, 1000);
     }
 
@@ -88,14 +139,20 @@ class Game {
         this.placePiece(this.n/2 - 1, this.n/2, 'B');
     }
 
+    
+
+    checkEndGameCondition(){
+
+    }
+
     hasValidPath(x, y, step) {
         if (!this.isValidPosition(x + step.x, y + step.y)) {
             return false;
         }
         const dest = this.board[y + step.y][x + step.x];
         if (dest) {
-            if (dest === this.currentPlayer) {
-                if ((this.board[y][x] || this.currentPlayer) !== dest) {
+            if (dest === this.currentPlayer.type) {
+                if ((this.board[y][x] || this.currentPlayer.type) !== dest) {
                     return true;
                 }
             } else {
@@ -105,16 +162,8 @@ class Game {
         return false;
     }
 
-    getDirections() {
-        const dirs = [];
-        for (let x = -1; x <= 1; x++) {
-            for (let y = -1; y <= 1; y++) {
-                if (y || x) {
-                    dirs.push({x, y});
-                }
-            }
-        }
-        return dirs;
+    getOppositePlayer() {
+        return this.currentPlayer === this.playerBlack ? this.playerWhite : this.playerBlack;
     }
 
     populateEnabledCells() {
@@ -122,7 +171,7 @@ class Game {
 
         for (let x = 0; x < this.n; x++) {
             for (let y = 0; y < this.n; y++) {
-                if (this.getDirections().some(dir => this.hasValidPath(x, y, dir))) {
+                if (getDirections().some(dir => this.hasValidPath(x, y, dir))) {
                     this.enabledCells[`${x}*${y}`] = true;
                 }
             }
@@ -130,7 +179,8 @@ class Game {
     }
 
     nextTurn() {
-        this.currentPlayer = this.currentPlayer === 'A' ? 'B' : 'A';
+        this.currentPlayer = this.currentPlayer === this.playerBlack ? this.playerWhite : this.playerBlack;
+        this.currentPlayer.turnStartTime = this.duration.valueOf();
     }
 
     placePiece(x, y, type){
@@ -148,31 +198,33 @@ class Game {
         }
         const dest = this.board[y + step.y][x + step.x];
         
-        if (dest === this.currentPlayer) {
+        if (dest === this.currentPlayer.type) {
             return;
         }
 
-        this.placePiece(x + step.x, y + step.y, this.currentPlayer);
+        this.placePiece(x + step.x, y + step.y, this.currentPlayer.type);
+        this.currentPlayer.score += 1;
+        this.getOppositePlayer().score -= 1;
+
         this.eatDirection(x + step.x, y + step.y, step);
     }
 
     makeMove(x, y) {
-        this.placePiece(x, y, this.currentPlayer);
+        this.placePiece(x, y, this.currentPlayer.type);
+        this.currentPlayer.score += 1;
 
-        this.getDirections().forEach(dir => {
+        getDirections().forEach(dir => {
             if (this.hasValidPath(x, y, dir)) {
                 this.eatDirection(x, y, dir);
             }
         });
 
+        this.currentPlayer.turns += 1;
+        this.updatePlayerAverageTime();
+        this.updateStatsBoard();
         this.nextTurn();
         this.populateEnabledCells();
         this.render();
-    }
-
-    // Enable the valid cells per the current board and per current user.
-    validateCells(){
-
     }
 
     isValidPosition(x, y) {
@@ -185,7 +237,7 @@ class Game {
         parent.style.gridTemplateColumns = `repeat(${this.n}, 1fr)`;
         emptyElement(parent);
         parent.classList.remove('black', 'white');
-        parent.classList.add(this.currentPlayer === 'A' ? 'black' : 'white');
+        parent.classList.add(this.currentPlayer.type === 'A' ? 'black' : 'white');
 
         this.board.map(
             (row, y) => 
